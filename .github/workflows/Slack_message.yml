@@ -1,0 +1,101 @@
+name: Slack Notification on Issue Activity Lastest
+on:
+  issues:
+      # types: [opened, edited, deleted, transferred, pinned, unpinned, closed, reopened, assigned, unassigned, labeled, unlabeled, locked, unlocked, milestoned, demilestoned]
+  issue_comment:
+    # types: [created, edited, deleted]
+jobs:
+  slack_notification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set current date and time
+        run: echo "CURRENT_DATETIME=$(date +'%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Send Slack Notification
+        id: slack
+        uses: slackapi/slack-github-action@v1.25.0
+        with:
+          payload: |
+            {
+            	"blocks": [
+            		{
+            			"type": "header",
+            			"text": {
+            				"type": "plain_text",
+            				"text": "${{ github.event_name }} [${{github.event.action}}]",
+            				"emoji": true
+            			}
+            		},
+            		{
+            			"type": "divider"
+            		},
+            		{
+            			"type": "context",
+            			"elements": [
+            				{
+            					"type": "mrkdwn",
+            					"text": "<https://github.com/${{ github.repository }}/issues/${{ github.event.issue.number }}|_#_${{ github.event.issue.number }} ${{ github.event.issue.title }}>"
+            				}
+            			]
+            		},
+            		{
+            			"type": "section",
+            			"text": {
+            				"type": "mrkdwn",
+            				"text": "*Comment Content:*\n>>>${{ github.event.comment.body }}"
+            			}
+            		},
+            		{
+            			"type": "context",
+            			"elements": [
+            				{
+            					"type": "mrkdwn",
+            					"text": "*Action by:* <https://github.com/${{ github.actor }}|`${{ github.actor }}`>"
+            				},
+            				{
+            					"type": "mrkdwn",
+            					"text": "*When:* ${{ env.CURRENT_DATETIME }}"
+            				},
+            				{
+            					"type": "mrkdwn",
+            					"text": "<https://github.com/${{ github.repository }}|${{ github.repository }}>"
+            				},
+            				{
+            					"type": "mrkdwn",
+            					"text": "<https://github.com/kyeob1107/Four-A/issues|View issue>"
+            				}
+            			]
+            		},
+            		{
+            			"type": "rich_text",
+            			"elements": [
+            				{
+            					"type": "rich_text_section",
+            					"elements": [
+            						{
+            							"type": "text",
+            							"text": "${{ github.run.id }} , ${{ github.run.number }}"
+            						}
+            					]
+            				}
+            			]
+            		},
+            		{
+            			"type": "divider"
+            		}
+            	]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+        # run: |
+        #   ISSUE_TITLE="${{ github.event.issue.title }}"
+        #   COMMENT_BODY="${{ github.event.comment.body }}"
+        #   MESSAGE=">>>Issue: *$ISSUE_TITLE*\nNew Comment: $COMMENT_BODY\n"
+        #   MESSAGE+="GitHub Issue has been updated. Action by: \`${{ github.actor }}\`.\n"
+        #   MESSAGE+="테스트 워크플로를 트리거한 이벤트: \`${{ github.event_name }}\`.\n"
+        #   MESSAGE+="테스트 워크플로를 트리거한 이벤트의 데이터를 포함하는 파일의 경로: \`${{ github.event_path }}\`.\n"
+        #   MESSAGE+="테스트 GitHub Actions 러너가 작업을 수행하는 디렉토리의 경로: \`${{ github.workspace }}\`.\n"
+        #   MESSAGE+="테스트 트리거 이벤트에 대한 커밋 SHA: \`${{ github.sha }}\`."
+        #   curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"$MESSAGE\"}" $SLACK_WEBHOOK_URL
